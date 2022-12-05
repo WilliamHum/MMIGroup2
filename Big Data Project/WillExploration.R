@@ -4,22 +4,26 @@ library(ggplot2)
 #data cleaning
 dat_unclean <- read.csv("shcwep-5362-E-2022_F1.csv")
 dat <- filter(dat_unclean,(complete.cases(dat_unclean)))
-dat <- filter(dat,GEN_20<=5)
-dat <- filter(dat,ICJ_05E<=2)#2 = no
-dat <- filter(dat,ICJ_05L<=2)#1 is took unpaid leave, 2 is did not take unpaid leave
-dat <- filter(dat,IM_10D<=2)#1 is loneliness due to covid, 2 is none
-dat <- filter(dat,GDRDVGRP<=2)#gender
+dat <- filter(dat,GEN_20<=5) #mental health compared to before the pandemic
+dat <- filter(dat,ICJ_05E<=2)#workload
+dat <- filter(dat,ICJ_05L<=2)#unpaid leave
+dat <- filter(dat,IM_10D<=2)#loneliness
+dat <- filter(dat,GDRDVGRP<=2)#gender(m/f)
+dat <- filter(dat,IM_10C<=2)#knows someone who died from covid
+
+#Modicification of variables (mostly changing things to binary/bernoulli)
 dat <- mutate(dat,mental_health = ifelse(GEN_20 <= 3,0,1)) #changed to Bernoulli, 0 means the same or better
 dat <- mutate(dat, workload = ifelse(ICJ_05E == 2,0,1)) # changed workload to Bernoulli
 dat <- mutate(dat, unpaidleave = ifelse(ICJ_05L == 1,1,0)) #unpaid leave is 1, didnt take is 0
 dat <- mutate(dat, loneliness = ifelse(IM_10D == 1,1,0)) #1 is experienced loneliness due to covid, 0 is didnt
 dat <- mutate(dat, male = ifelse(GDRDVGRP == 1,1,0)) #1 if male, 0 if female
+dat <- mutate(dat, closedeath = ifelse(IM_10C == 2,0,1)) #0 if no, 1 if yes ; no significant effect
 
 dat["LMAGNOC"][dat["LMAGNOC"] == "2"] <- "Nurse" #LMAGNOC is occupation within healthcare industry
 dat["LMAGNOC"][dat["LMAGNOC"] == "3"] <- "Supportworker" #this is personal support worker or care aides
 dat["LMAGNOC"][dat["LMAGNOC"] == "4"] <- "Other"
 colnames(dat)[colnames(dat) == "LMAGNOC"] ="occupation"
-dat <- mutate(dat, occupation=as.factor(occupation))
+dat <- mutate(dat, occupation=as.factor(occupation)) #1 was physicians, which are dummy variables
 
 #initial testing for effect of workload on mental health
 graphdat <- dat %>% group_by(workload) %>% summarize(mental_health = mean(mental_health))
@@ -34,6 +38,6 @@ summary(ln1) #so far increased workload increases probability of having worse me
 
 #Finding our model
 #adding other variables
-ln2 <- lm(mental_health ~ workload + occupation + unpaidleave + loneliness + male, data=dat) #unpaid leave probably related to workload
+ln2 <- lm(mental_health ~ workload + unpaidleave + loneliness + male, data=dat) #unpaid leave probably related to workload
 summary(ln2)
 #Interactions: male is not an interaction, occupation may not work

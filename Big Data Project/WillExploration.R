@@ -12,6 +12,7 @@ dat <- filter(dat,GDRDVGRP<=2)#gender(m/f)
 dat <- filter(dat,IM_10C<=2)#knows someone who died from covid
 dat <- filter(dat,OCCDVGYW<=3)#the numbers of years in current occupation.
 dat <- filter(dat, AGEDVGRP<=4)#age in four groups, youngest to oldest
+dat <- filter(dat,ICJ_05D<=2)#different work task? potential instrument
 
 
 #Modicification of variables (mostly changing things to binary/bernoulli)
@@ -23,6 +24,7 @@ dat <- mutate(dat, male = ifelse(GDRDVGRP == 1,1,0)) #1 if male, 0 if female
 dat <- mutate(dat, closedeath = ifelse(IM_10C == 2,0,1)) #0 if no, 1 if yes ; no significant effect
 dat <- mutate(dat, NumberYearFac = as.factor(OCCDVGYW)) # Less than 10 years / 10 to 19 years / 20 years or more
 dat <- mutate(dat, AgeFac = as.factor(AGEDVGRP)) # divide age into different segmentation
+dat <- mutate(dat, diffTask = ifelse(ICJ_05D == 1,0,1)) #1 is different task
 
 
 #dat["LMAGNOC"][dat["LMAGNOC"] == "2"] <- "Nurse" #LMAGNOC is occupation within healthcare industry
@@ -44,12 +46,16 @@ summary(ln1) #so far increased workload increases probability of having worse me
 
 #Finding our model
 #adding other variables
-ln2 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac, data=dat) #unpaid leave probably related to workload
+ln2 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat) #unpaid leave probably related to workload
 summary(ln2)
 #Interactions: male is not an interaction, occupation may not work
 
 # instrument: Age group of respondents in increments of 10
 #             the number of years that the respondent has worked in their current occupation.
 #             change method of delivery of health care
+#             different work task
+
+ln3 <- lm(workload ~ diffTask + unpaidleave + loneliness + male + AgeFac + NumberYearFac, data=dat) #testing an instrument (diffTask)
+summary(ln3)
 
  

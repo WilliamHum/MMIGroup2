@@ -1,6 +1,6 @@
 library(tidyverse)
 library(ggplot2)
-
+#should we do probit/logit?
 #data cleaning
 bigdataCase <- read_csv("shcwep-5362-E-2022_F1.csv")
 dat <- filter(bigdataCase,(complete.cases(bigdataCase)))
@@ -13,6 +13,7 @@ dat <- filter(dat,IM_10C<=2)#knows someone who died from covid
 dat <- filter(dat,OCCDVGYW<=3)#the numbers of years in current occupation.
 dat <- filter(dat, AGEDVGRP<=4)#age in four groups, youngest to oldest
 dat <- filter(dat,ICJ_05D<=2)#different work task? potential instrument
+dat <- filter(dat,ICJ_05I<=2)#loss of income 1 = yes 2 = no
 
 
 #Modicification of variables (mostly changing things to binary/bernoulli)
@@ -25,6 +26,7 @@ dat <- mutate(dat, closedeath = ifelse(IM_10C == 2,0,1)) #0 if no, 1 if yes ; no
 dat <- mutate(dat, NumberYearFac = as.factor(OCCDVGYW)) # Less than 10 years / 10 to 19 years / 20 years or more
 dat <- mutate(dat, AgeFac = as.factor(AGEDVGRP)) # divide age into different segmentation
 dat <- mutate(dat, diffTask = ifelse(ICJ_05D == 1,0,1)) #1 is different task
+dat <- mutate(dat, incomeloss = ifelse(ICJ_05I == 2,0,1)) # 1 is loss of income
 
 
 #dat["LMAGNOC"][dat["LMAGNOC"] == "2"] <- "Nurse" #LMAGNOC is occupation within healthcare industry
@@ -41,13 +43,13 @@ ggplot(graphdat) + geom_bar(aes(x = workload, y = mental_health, fill = workload
   theme(legend.position = '')
 
 t.test(mental_health ~ workload, data=dat) #checking if workload affects mental health significantly (it does)
-ln1 <- lm(mental_health ~ workload, data=dat) #single variable OLS
-summary(ln1) #so far increased workload increases probability of having worse mental health by 22.15%
+ln0 <- lm(mental_health ~ workload, data=dat) #single variable OLS
+summary(ln0) #so far increased workload increases probability of having worse mental health by 22.15%
 
 #Finding our model
 #adding other variables
 full_model <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat) #unpaid leave probably related to workload
-summary(ln2)
+summary(full_model)
 #Interactions: male is not an interaction, occupation may not work
 
 # instrument: Age group of respondents in increments of 10
@@ -61,9 +63,12 @@ summary(ln3)
 
 #"preliminary regressions"
 ln1 <- lm(mental_health ~ workload, data=dat)
+summary(ln1)
 ln2 <- lm(mental_health ~ workload + unpaidleave, data=dat)
+summary(ln2)
 ln3 <- lm(mental_health ~ workload + unpaidleave + loneliness, data=dat)
 ln4 <- lm(mental_health ~ workload + unpaidleave + loneliness + male, data=dat)
 ln5 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac, data=dat)
 ln6 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac, data=dat)
-ln7 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat)
+ln7 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + incomeloss, data=dat)
+summary(ln7)

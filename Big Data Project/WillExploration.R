@@ -2,7 +2,7 @@ library(tidyverse)
 library(ggplot2)
 
 #data cleaning
-bigdataCase <- read_csv("~/Desktop/bigdataCase.csv")
+bigdataCase <- read_csv("shcwep-5362-E-2022_F1.csv")
 dat <- filter(bigdataCase,(complete.cases(bigdataCase)))
 dat <- filter(dat,GEN_20<=5) #mental health compared to before the pandemic
 dat <- filter(dat,ICJ_05E<=2)#workload
@@ -46,7 +46,7 @@ summary(ln1) #so far increased workload increases probability of having worse me
 
 #Finding our model
 #adding other variables
-ln2 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat) #unpaid leave probably related to workload
+full_model <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat) #unpaid leave probably related to workload
 summary(ln2)
 #Interactions: male is not an interaction, occupation may not work
 
@@ -55,7 +55,15 @@ summary(ln2)
 #             change method of delivery of health care
 #             different work task
 
+#instrument testing
 ln3 <- lm(workload ~ diffTask + unpaidleave + loneliness + male + AgeFac + NumberYearFac, data=dat) #testing an instrument (diffTask)
 summary(ln3)
 
- 
+#"preliminary regressions"
+ln1 <- lm(mental_health ~ workload, data=dat)
+ln2 <- lm(mental_health ~ workload + unpaidleave, data=dat)
+ln3 <- lm(mental_health ~ workload + unpaidleave + loneliness, data=dat)
+ln4 <- lm(mental_health ~ workload + unpaidleave + loneliness + male, data=dat)
+ln5 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac, data=dat)
+ln6 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac, data=dat)
+ln7 <- lm(mental_health ~ workload + unpaidleave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat)

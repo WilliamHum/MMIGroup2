@@ -1,5 +1,9 @@
 library(tidyverse)
 library(ggplot2)
+library(lmtest)
+library(sandwich)
+library(AER)
+library(stargazer)
 #should we do probit/logit?
 #data cleaning
 bigdataCase <- read_csv("shcwep-5362-E-2022_F1.csv")
@@ -26,11 +30,12 @@ dat <- mutate(dat, male = ifelse(GDRDVGRP == 1,1,0)) #1 if male, 0 if female
 dat <- mutate(dat, closedeath = ifelse(IM_10C == 2,0,1)) #0 if no, 1 if yes ; no significant effect
 dat <- mutate(dat, NumberYearFac = as.factor(OCCDVGYW)) # Less than 10 years / 10 to 19 years / 20 years or more
 dat <- mutate(dat, AgeFac = as.factor(AGEDVGRP)) # divide age into different segmentation
-dat <- mutate(dat, diffTask = ifelse(ICJ_05D == 1,0,1)) #1 is different task
+dat <- mutate(dat, diff_task = ifelse(ICJ_05D == 1,0,1)) #1 is different task
 dat <- mutate(dat, incomeloss = ifelse(ICJ_05I == 2,0,1)) # 1 is loss of income due to COVID-19 pandemic
 dat <- mutate(dat, more_stress = ifelse(ICJ_05C == 2,0,1)) #1 is more stressed from COVID-19 pandemic
 dat <- mutate(dat, more_conflict = ifelse(ICJ_05B == 2,0,1))# 1 is more conflict between employees and management due to covid
 
+#THIS DOESNT WORK FOR SOME REASON
 #dat["LMAGNOC"][dat["LMAGNOC"] == "2"] <- "Nurse" #LMAGNOC is occupation within healthcare industry
 #dat["LMAGNOC"][dat["LMAGNOC"] == "3"] <- "Supportworker" #this is personal support worker or care aides
 #dat["LMAGNOC"][dat["LMAGNOC"] == "4"] <- "Other"
@@ -49,10 +54,10 @@ ln0 <- lm(mental_health ~ workload, data=dat) #single variable OLS
 summary(ln0) #so far increased workload increases probability of having worse mental health by 22.15%
 
 #Finding our model
-#adding other variables
-full_model <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + diffTask, data=dat) #unpaid leave probably related to workload
-#summary(full_model)
+full_model <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat) #unpaid leave probably related to workload
+summary(full_model)
 #Interactions: male is not an interaction, occupation may not work
+#Notes: maybe remove NumberYearFac
 
 # instrument: Age group of respondents in increments of 10
 #             the number of years that the respondent has worked in their current occupation.
@@ -60,14 +65,16 @@ full_model <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + A
 #             different work task
 
 #instrument testing
-ln3 <- lm(workload ~ diffTask + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat) #testing an instrument (diffTask)
-#summary(ln3)
+iv1 <- lm(workload ~ diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat) #testing an instrument (diffTask)
+summary(iv1)
+iv2 <- ivreg(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac | diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat)
+summary(iv2)
+
+
 
 #"preliminary regressions"
 ln1 <- lm(mental_health ~ workload, data=dat)
-summary(ln1)
 ln2 <- lm(mental_health ~ workload + unpaid_leave, data=dat)
-summary(ln2)
 ln3 <- lm(mental_health ~ workload + unpaid_leave + loneliness, data=dat)
 ln4 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male, data=dat)
 ln5 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac, data=dat)

@@ -54,7 +54,7 @@ ln0 <- lm(mental_health ~ workload, data=dat) #single variable OLS
 summary(ln0) #so far increased workload increases probability of having worse mental health by 22.15%
 
 #Finding our model
-full_model <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat) #unpaid leave probably related to workload
+full_model <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat) #unpaid leave probably related to workload
 summary(full_model)
 #Interactions: male is not an interaction, occupation may not work
 #Notes: maybe remove NumberYearFac
@@ -65,9 +65,9 @@ summary(full_model)
 #             different work task
 
 #instrument testing
-iv1 <- lm(workload ~ diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat) #testing an instrument (diffTask)
+iv1 <- lm(workload ~ diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat) #testing an instrument (diffTask)
 summary(iv1)
-iv2 <- ivreg(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac | diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac, data=dat)
+iv2 <- ivreg(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict| diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
 summary(iv2)
 
 
@@ -83,4 +83,4 @@ ln7 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac +
 ln8 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress, data=dat)
 ln9 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
 
-#summary(ln9)
+stargazer(ln1, ln2, ln3, ln4, ln5, ln6, ln7, ln8, ln9, type = 'text', out ="table1.jpg")

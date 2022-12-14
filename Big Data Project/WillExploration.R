@@ -20,6 +20,7 @@ dat <- filter(dat,ICJ_05D<=2)#different work task? potential instrument
 dat <- filter(dat,ICJ_05I<=2)#loss of income 1 = yes 2 = no
 dat <- filter(dat,ICJ_05C<=2)#more stressed at work due to COVID 19? 1 = yes 2 = no
 dat <- filter(dat,ICJ_05B<=2)#more conflict 1 = yes 2 = no
+dat <- filter(dat,LMAGNOC<=4)#occupation from 1 to 4
 
 #Modicification of variables (mostly changing things to binary/bernoulli)
 dat <- mutate(dat,mental_health = ifelse(GEN_20 <= 3,0,1)) #changed to Bernoulli, 0 means the same or better
@@ -34,6 +35,7 @@ dat <- mutate(dat, diff_task = ifelse(ICJ_05D == 1,0,1)) #1 is different task
 dat <- mutate(dat, incomeloss = ifelse(ICJ_05I == 2,0,1)) # 1 is loss of income due to COVID-19 pandemic
 dat <- mutate(dat, more_stress = ifelse(ICJ_05C == 2,0,1)) #1 is more stressed from COVID-19 pandemic
 dat <- mutate(dat, more_conflict = ifelse(ICJ_05B == 2,0,1))# 1 is more conflict between employees and management due to covid
+dat <- mutate(dat, occupation = as.factor(LMAGNOC))
 
 #THIS DOESNT WORK FOR SOME REASON
 #dat["LMAGNOC"][dat["LMAGNOC"] == "2"] <- "Nurse" #LMAGNOC is occupation within healthcare industry
@@ -71,8 +73,7 @@ iv2 <- ivreg(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFa
 summary(iv2)
 
 
-
-#"preliminary regressions"
+#regressions
 ln1 <- lm(mental_health ~ workload, data=dat)
 ln2 <- lm(mental_health ~ workload + unpaid_leave, data=dat)
 ln3 <- lm(mental_health ~ workload + unpaid_leave + loneliness, data=dat)
@@ -82,5 +83,18 @@ ln6 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac +
 ln7 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss, data=dat)
 ln8 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress, data=dat)
 ln9 <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
+#ln9 is the full regression
+ln10 <- lm(mental_health ~ workload*male + unpaid_leave + loneliness + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
+#ln10 shows there is no interaction between workload and male
+ln11 <- lm(mental_health ~ workload*AgeFac + unpaid_leave + loneliness + male + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
+#ln11 shows there is no interaction between workload and AgeFac
+ln12 <- lm(mental_health ~ workload*occupation + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
+#ln12 shows that there is an interaction with occupation (physicians tend to be the most negatively affected by increased workload)
+stargazer(ln1, ln2, ln3, ln4, ln5, ln6, ln7, ln8, ln9, ln10, ln11, ln12, type = 'text', 
+          add.lines = list(c('added variable','workload','unpaid leave','loneliness','male','AgeFac','NumberYearFac','incomeloss','more stress','more conflict','male interaction','age group interaction','occupation interaction')),
+          out ="table1.txt")
 
-stargazer(ln1, ln2, ln3, ln4, ln5, ln6, ln7, ln8, ln9, type = 'text', out ="table1.jpg")
+#WALD TEST
+reg_restricted <- lm(mental_health ~ 1,data=dat)
+waldtest(ln9, reg_restricted, vcov=vcovHC(ln9))
+#Wald Test showed that all of the coefficients are significant

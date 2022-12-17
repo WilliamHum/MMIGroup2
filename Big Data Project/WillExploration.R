@@ -21,6 +21,7 @@ library(lmtest)
 library(sandwich)
 library(AER)
 library(stargazer)
+library(psych)
 
 #data cleaning
 bigdataCase <- read_csv("shcwep-5362-E-2022_F1.csv")
@@ -54,6 +55,12 @@ dat <- mutate(dat, more_stress = ifelse(ICJ_05C == 2,0,1)) #1 is more stressed f
 dat <- mutate(dat, more_conflict = ifelse(ICJ_05B == 2,0,1))# 1 is more conflict between employees and management due to covid
 dat <- mutate(dat, occupation = as.factor(LMAGNOC))
 
+#data descriptions
+describe(dat[ , c('workload','unpaid_leave','loneliness','male','incomeloss','more_stress','more_conflict','diff_task')], fast=TRUE)
+prop.table(table(dat$AgeFac))
+prop.table(table(dat$NumberYearFac))
+
+
 #initial testing for effect of workload on mental health
 graphdat <- dat %>% group_by(workload) %>% summarize(mental_health = mean(mental_health))
 ggplot(graphdat) + geom_bar(aes(x = workload, y = mental_health, fill = workload), stat = 'identity') + 
@@ -74,7 +81,7 @@ summary(iv2)
 regtest <-lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
 summary(regtest)
 
-#regressions
+#regressions, each time adding one variable to control and reduce OVB
 ln1 <- lm(mental_health ~ workload, data=dat)
 ln2 <- lm(mental_health ~ workload + unpaid_leave, data=dat)
 ln3 <- lm(mental_health ~ workload + unpaid_leave + loneliness, data=dat)
@@ -94,7 +101,7 @@ ln12 <- lm(mental_health ~ workload*occupation + unpaid_leave + loneliness + mal
 stargazer(ln1, ln2, ln3, ln4, ln5, ln6, ln7, ln8, ln9, iv2, ln10, ln11, ln12, type = 'text', 
           add.lines = list(c('added variable','workload','unpaid leave','loneliness','male','AgeFac','NumberYearFac','incomeloss','more stress','more conflict','IV','male interaction','age group interaction','occupation interaction')),
           out="table1.txt")
-
+summary(ln9)
 #WALD TEST
 reg_restricted <- lm(mental_health ~ 1,data=dat)
 waldtest(ln9, reg_restricted, vcov=vcovHC(ln9))

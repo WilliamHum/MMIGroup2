@@ -1,3 +1,20 @@
+# detach("package:stargazer",unload=T)
+# # Delete it
+# remove.packages("stargazer")
+# # Download the source
+# download.file("https://cran.r-project.org/src/contrib/stargazer_5.2.3.tar.gz", destfile = "stargazer_5.2.3.tar.gz")
+# # Unpack
+# untar("stargazer_5.2.3.tar.gz")
+# # Read the sourcefile with .inside.bracket fun
+# stargazer_src <- readLines("stargazer/R/stargazer-internal.R")
+# # Move the length check 5 lines up so it precedes is.na(.)
+# stargazer_src[1990] <- stargazer_src[1995]
+# stargazer_src[1995] <- ""
+# # Save back
+# writeLines(stargazer_src, con="stargazer/R/stargazer-internal.R")
+# # Compile and install the patched package
+# install.packages("stargazer", repos = NULL, type="source")
+
 library(tidyverse)
 library(ggplot2)
 library(lmtest)
@@ -54,6 +71,8 @@ summary(iv1)
 iv2 <- ivreg(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict| diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
 summary(iv2)
 
+regtest <-lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
+summary(regtest)
 
 #regressions
 ln1 <- lm(mental_health ~ workload, data=dat)
@@ -72,9 +91,9 @@ ln11 <- lm(mental_health ~ workload*AgeFac + unpaid_leave + loneliness + male + 
 #ln11 shows there is no interaction between workload and AgeFac
 ln12 <- lm(mental_health ~ workload*occupation + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
 #ln12 shows that there is an interaction with occupation (physicians tend to be the most negatively affected by increased workload)
-stargazer(ln1, ln2, ln3, ln4, ln5, ln6, ln7, ln8, ln9, ln10, ln11, ln12, type = 'text', 
-          add.lines = list(c('added variable','workload','unpaid leave','loneliness','male','AgeFac','NumberYearFac','incomeloss','more stress','more conflict','male interaction','age group interaction','occupation interaction')),
-          out ="table1.txt")
+stargazer(ln1, ln2, ln3, ln4, ln5, ln6, ln7, ln8, ln9, iv2, ln10, ln11, ln12, type = 'text', 
+          add.lines = list(c('added variable','workload','unpaid leave','loneliness','male','AgeFac','NumberYearFac','incomeloss','more stress','more conflict','IV','male interaction','age group interaction','occupation interaction')),
+          out="table1.txt")
 
 #WALD TEST
 reg_restricted <- lm(mental_health ~ 1,data=dat)

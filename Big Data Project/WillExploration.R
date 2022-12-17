@@ -4,7 +4,7 @@ library(lmtest)
 library(sandwich)
 library(AER)
 library(stargazer)
-#should we do probit/logit?
+
 #data cleaning
 bigdataCase <- read_csv("shcwep-5362-E-2022_F1.csv")
 dat <- filter(bigdataCase,(complete.cases(bigdataCase)))
@@ -22,7 +22,7 @@ dat <- filter(dat,ICJ_05C<=2)#more stressed at work due to COVID 19? 1 = yes 2 =
 dat <- filter(dat,ICJ_05B<=2)#more conflict 1 = yes 2 = no
 dat <- filter(dat,LMAGNOC<=4)#occupation from 1 to 4
 
-#Modicification of variables (mostly changing things to binary/bernoulli)
+#Modification of variables (mostly changing things to binary/bernoulli)
 dat <- mutate(dat,mental_health = ifelse(GEN_20 <= 3,0,1)) #changed to Bernoulli, 0 means the same or better
 dat <- mutate(dat, workload = ifelse(ICJ_05E == 2,0,1)) # changed workload to Bernoulli
 dat <- mutate(dat, unpaid_leave = ifelse(ICJ_05L == 1,1,0)) #unpaid leave is 1, didnt take is 0
@@ -37,13 +37,6 @@ dat <- mutate(dat, more_stress = ifelse(ICJ_05C == 2,0,1)) #1 is more stressed f
 dat <- mutate(dat, more_conflict = ifelse(ICJ_05B == 2,0,1))# 1 is more conflict between employees and management due to covid
 dat <- mutate(dat, occupation = as.factor(LMAGNOC))
 
-#THIS DOESNT WORK FOR SOME REASON
-#dat["LMAGNOC"][dat["LMAGNOC"] == "2"] <- "Nurse" #LMAGNOC is occupation within healthcare industry
-#dat["LMAGNOC"][dat["LMAGNOC"] == "3"] <- "Supportworker" #this is personal support worker or care aides
-#dat["LMAGNOC"][dat["LMAGNOC"] == "4"] <- "Other"
-#colnames(dat)[colnames(dat) == "LMAGNOC"] ="occupation"
-#dat <- mutate(dat, occupation=as.factor(occupation)) #1 was physicians, which are dummy variables
-
 #initial testing for effect of workload on mental health
 graphdat <- dat %>% group_by(workload) %>% summarize(mental_health = mean(mental_health))
 ggplot(graphdat) + geom_bar(aes(x = workload, y = mental_health, fill = workload), stat = 'identity') + 
@@ -55,18 +48,7 @@ t.test(mental_health ~ workload, data=dat) #checking if workload affects mental 
 ln0 <- lm(mental_health ~ workload, data=dat) #single variable OLS
 summary(ln0) #so far increased workload increases probability of having worse mental health by 22.15%
 
-#Finding our model
-full_model <- lm(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat) #unpaid leave probably related to workload
-summary(full_model)
-#Interactions: male is not an interaction, occupation may not work
-#Notes: maybe remove NumberYearFac
-
-# instrument: Age group of respondents in increments of 10
-#             the number of years that the respondent has worked in their current occupation.
-#             change method of delivery of health care
-#             different work task
-
-#instrument testing
+#instrument testing (diff_task)
 iv1 <- lm(workload ~ diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat) #testing an instrument (diffTask)
 summary(iv1)
 iv2 <- ivreg(mental_health ~ workload + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict| diff_task + unpaid_leave + loneliness + male + AgeFac + NumberYearFac + incomeloss + more_stress + more_conflict, data=dat)
